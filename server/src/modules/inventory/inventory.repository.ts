@@ -1,5 +1,5 @@
 import prisma from '@infrastructure/database/prisma';
-import { Brand, Category, Product, ProductVariant, Prisma } from '@prisma/client';
+import { Brand, Category, Product, ProductVariant, Prisma, Location } from '@prisma/client';
 
 // ── Brands ──────────────────────────────────────────────────
 
@@ -18,6 +18,28 @@ export class BrandRepository {
     }
     delete(id: number): Promise<Brand> {
         return prisma.brand.delete({ where: { id } });
+    }
+}
+
+export class LocationRepository {
+    findAll(shopId: string): Promise<Location[]> {
+        return prisma.location.findMany({ where: { shopId }, orderBy: { name: 'asc' } });
+    }
+
+    findById(id: number, shopId: string): Promise<Location | null> {
+        return prisma.location.findFirst({ where: { id, shopId } });
+    }
+
+    create(data: Prisma.LocationCreateInput): Promise<Location> {
+        return prisma.location.create({ data });
+    }
+
+    update(id: number, data: Prisma.LocationUpdateInput): Promise<Location> {
+        return prisma.location.update({ where: { id }, data });
+    }
+
+    delete(id: number): Promise<Location> {
+        return prisma.location.delete({ where: { id } });
     }
 }
 

@@ -14,6 +14,12 @@ router.post('/brands', authorize('admin', 'inventory_manager'), ctrl.createBrand
 router.put('/brands/:id', authorize('admin', 'inventory_manager'), ctrl.updateBrand);
 router.delete('/brands/:id', authorize('admin'), ctrl.deleteBrand);
 
+// Locations
+router.get('/locations', ctrl.listLocations);
+router.post('/locations', authorize('admin', 'inventory_manager'), ctrl.createLocation);
+router.put('/locations/:id', authorize('admin', 'inventory_manager'), ctrl.updateLocation);
+router.delete('/locations/:id', authorize('admin'), ctrl.deleteLocation);
+
 // Categories
 router.get('/categories', ctrl.listCategories);
 router.post('/categories', authorize('admin', 'inventory_manager'), ctrl.createCategory);

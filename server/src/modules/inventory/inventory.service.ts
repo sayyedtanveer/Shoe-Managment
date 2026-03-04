@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import {
     BrandRepository,
     CategoryRepository,
+    LocationRepository,
     ProductRepository,
     VariantRepository,
 } from './inventory.repository';
@@ -10,16 +11,39 @@ import { NotFoundError, BadRequestError } from '@core/ApiError';
 export class InventoryService {
     private brands = new BrandRepository();
     private categories = new CategoryRepository();
+    private locations = new LocationRepository();
     private products = new ProductRepository();
     private variants = new VariantRepository();
+
+    private async ensureBrandInShop(id: number, shopId: string) {
+        const entity = await this.brands.findById(id, shopId);
+        if (!entity) throw new NotFoundError('Brand not found');
+        return entity;
+    }
+
+    private async ensureCategoryInShop(id: number, shopId: string) {
+        const entity = await this.categories.findById(id, shopId);
+        if (!entity) throw new NotFoundError('Category not found');
+        return entity;
+    }
+
+    private async ensureProductInShop(id: string, shopId: string) {
+        const entity = await this.products.findById(id, shopId);
+        if (!entity) throw new NotFoundError('Product not found');
+        return entity;
+    }
+
+    private async ensureVariantInShop(id: string, shopId: string) {
+        const entity = await this.variants.findById(id);
+        if (!entity || entity.shopId !== shopId) throw new NotFoundError('Variant not found');
+        return entity;
+    }
 
     // ── Brands ──────────────────────────────────────────────────
     listBrands(shopId: string) { return this.brands.findAll(shopId); }
 
     async getBrand(id: number, shopId: string) {
-        const b = await this.brands.findById(id, shopId);
-        if (!b) throw new NotFoundError('Brand not found');
-        return b;
+        return this.ensureBrandInShop(id, shopId);
     }
 
     createBrand(shopId: string, name: string, gstRate?: number) {
@@ -30,19 +54,48 @@ export class InventoryService {
         });
     }
 
-    updateBrand(id: number, shopId: string, data: { name?: string; gstRate?: number }) {
+    async updateBrand(id: number, shopId: string, data: { name?: string; gstRate?: number }) {
+        await this.ensureBrandInShop(id, shopId);
         return this.brands.update(id, data);
     }
 
-    deleteBrand(id: number) { return this.brands.delete(id); }
+    async deleteBrand(id: number, shopId: string) {
+        await this.ensureBrandInShop(id, shopId);
+        return this.brands.delete(id);
+    }
+
+    // ── Locations ────────────────────────────────────────────────
+    listLocations(shopId: string) { return this.locations.findAll(shopId); }
+
+    async getLocation(id: number, shopId: string) {
+        const loc = await this.locations.findById(id, shopId);
+        if (!loc) throw new NotFoundError('Location not found');
+        return loc;
+    }
+
+    createLocation(shopId: string, name: string, isActive?: boolean) {
+        return this.locations.create({
+            shop: { connect: { id: shopId } },
+            name,
+            isActive: isActive ?? true,
+        });
+    }
+
+    async updateLocation(id: number, shopId: string, data: { name?: string; isActive?: boolean }) {
+        await this.getLocation(id, shopId);
+        return this.locations.update(id, data);
+    }
+
+    async deleteLocation(id: number, shopId: string) {
+        await this.getLocation(id, shopId);
+        return this.locations.delete(id);
+    }
 
     // ── Categories ───────────────────────────────────────────────
     listCategories(shopId: string) { return this.categories.findAll(shopId); }
 
     async getCategory(id: number, shopId: string) {
-        const c = await this.categories.findById(id, shopId);
-        if (!c) throw new NotFoundError('Category not found');
-        return c;
+        return this.ensureCategoryInShop(id, shopId);
     }
 
     createCategory(shopId: string, name: string, parentId?: number) {
@@ -54,11 +107,15 @@ export class InventoryService {
         return this.categories.create(data);
     }
 
-    updateCategory(id: number, data: { name?: string; parentId?: number }) {
+    async updateCategory(id: number, shopId: string, data: { name?: string; parentId?: number }) {
+        await this.ensureCategoryInShop(id, shopId);
         return this.categories.update(id, data as Prisma.CategoryUpdateInput);
     }
 
-    deleteCategory(id: number) { return this.categories.delete(id); }
+    async deleteCategory(id: number, shopId: string) {
+        await this.ensureCategoryInShop(id, shopId);
+        return this.categories.delete(id);
+    }
 
     // ── Products ─────────────────────────────────────────────────
     listProducts(shopId: string, filters: { brandId?: number; categoryId?: number }) {
@@ -66,9 +123,7 @@ export class InventoryService {
     }
 
     async getProduct(id: string, shopId: string) {
-        const p = await this.products.findById(id, shopId);
-        if (!p) throw new NotFoundError('Product not found');
-        return p;
+        return this.ensureProductInShop(id, shopId);
     }
 
     createProduct(shopId: string, dto: {
@@ -90,19 +145,24 @@ export class InventoryService {
         return this.products.create(data);
     }
 
-    updateProduct(id: string, data: Prisma.ProductUpdateInput) {
+    async updateProduct(id: string, shopId: string, data: Prisma.ProductUpdateInput) {
+        await this.ensureProductInShop(id, shopId);
         return this.products.update(id, data);
     }
 
-    softDeleteProduct(id: string) { return this.products.delete(id); }
+    async softDeleteProduct(id: string, shopId: string) {
+        await this.ensureProductInShop(id, shopId);
+        return this.products.delete(id);
+    }
 
     // ── Variants ─────────────────────────────────────────────────
-    listVariants(productId: string) { return this.variants.findByProduct(productId); }
+    async listVariants(productId: string, shopId: string) {
+        await this.ensureProductInShop(productId, shopId);
+        return this.variants.findByProduct(productId);
+    }
 
-    async getVariant(id: string) {
-        const v = await this.variants.findById(id);
-        if (!v) throw new NotFoundError('Variant not found');
-        return v;
+    async getVariant(id: string, shopId: string) {
+        return this.ensureVariantInShop(id, shopId);
     }
 
     createVariant(shopId: string, productId: string, dto: {
@@ -120,17 +180,21 @@ export class InventoryService {
         return this.variants.create(data);
     }
 
-    async adjustStock(id: string, delta: number) {
-        const variant = await this.getVariant(id);
+    async adjustStock(id: string, shopId: string, delta: number) {
+        const variant = await this.getVariant(id, shopId);
         if (variant.quantity + delta < 0) {
             throw new BadRequestError('Insufficient stock');
         }
         return this.variants.adjustStock(id, delta);
     }
 
-    updateVariant(id: string, data: Prisma.ProductVariantUpdateInput) {
+    async updateVariant(id: string, shopId: string, data: Prisma.ProductVariantUpdateInput) {
+        await this.getVariant(id, shopId);
         return this.variants.update(id, data);
     }
 
-    deleteVariant(id: string) { return this.variants.delete(id); }
+    async deleteVariant(id: string, shopId: string) {
+        await this.getVariant(id, shopId);
+        return this.variants.delete(id);
+    }
 }

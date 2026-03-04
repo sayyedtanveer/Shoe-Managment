@@ -10,29 +10,33 @@ export interface AuthUser {
     shopId: string;
 }
 
+export type AuthMode = 'web' | 'mobile';
+
 interface AuthState {
     user: AuthUser | null;
     accessToken: string | null;
+    refreshToken: string | null;
+    authMode: AuthMode;
     isAuthenticated: boolean;
 
-    setAuth: (user: AuthUser, accessToken: string) => void;
+    setAuth: (user: AuthUser, accessToken: string, refreshToken?: string | null, authMode?: AuthMode) => void;
     clearAuth: () => void;
     logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
             accessToken: null,
+            refreshToken: null,
+            authMode: 'web',
             isAuthenticated: false,
 
-            setAuth: (user, accessToken) =>
-                set({ user, accessToken, isAuthenticated: true }),
+            setAuth: (user, accessToken, refreshToken = null, authMode = 'web') =>
+                set({ user, accessToken, refreshToken, authMode, isAuthenticated: true }),
 
-
-            clearAuth: () =>
-                set({ user: null, accessToken: null, isAuthenticated: false }),
+            clearAuth: () => set({ user: null, accessToken: null, refreshToken: null, authMode: 'web', isAuthenticated: false }),
 
             logout: async () => {
                 try {
@@ -40,15 +44,17 @@ export const useAuthStore = create<AuthState>()(
                 } catch {
                     // Proceed even if server call fails
                 }
-                set({ user: null, accessToken: null, isAuthenticated: false });
+                get().clearAuth();
             },
         }),
         {
-            name: 'shoeflow_auth',    // localStorage key
+            name: 'shoeflow_auth',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 user: state.user,
                 accessToken: state.accessToken,
+                refreshToken: state.refreshToken,
+                authMode: state.authMode,
                 isAuthenticated: state.isAuthenticated,
             }),
         }
