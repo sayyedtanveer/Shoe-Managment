@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
-    const login = useAuthStore(state => state.login);
+    const setAuth = useAuthStore((state) => state.setAuth);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,7 +25,7 @@ export default function LoginPage() {
             });
 
             const { user, accessToken } = response.data.data;
-            login(user, accessToken);
+            setAuth(user, accessToken);
 
             if (user.role === 'admin') navigate('/admin');
             else if (user.role === 'salesman' || user.role === 'cashier') navigate('/counter');

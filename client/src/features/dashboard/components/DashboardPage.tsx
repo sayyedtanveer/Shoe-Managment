@@ -1,8 +1,7 @@
-import React from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export function DashboardPage() {
-    const user = useAuthStore(state => state.user);
+    const user = useAuthStore((state) => state.user);
 
     return (
         <div className="p-8 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)]">
