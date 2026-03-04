@@ -128,6 +128,6 @@ export class OrderRepository {
     }
 
     async updateStatus(id: string, shopId: string, status: string): Promise<Order> {
-        return prisma.order.update({ where: { id }, data: { status } });
+        return prisma.order.update({ where: { id, shopId }, data: { status } });
     }
 }

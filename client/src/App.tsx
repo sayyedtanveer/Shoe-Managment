@@ -5,6 +5,9 @@ import { AdminLayout } from '@/layouts/AdminLayout';
 import { CounterLayout } from '@/layouts/CounterLayout';
 import LoginPage from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
+import { InventoryPage } from '@/features/inventory/components/InventoryPage';
+import { CustomersPage } from '@/features/customers/components/CustomersPage';
+import { OrdersPage } from '@/features/orders/components/OrdersPage';
 
 export default function App() {
     return (
@@ -24,7 +27,9 @@ export default function App() {
                 }
             >
                 <Route index element={<DashboardPage />} />
-                {/* Future: inventory, users, reports will be nested here */}
+                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="orders" element={<OrdersPage />} />
             </Route>
 
             {/* ── Counter / Cashier routes ──────────────────────── */}

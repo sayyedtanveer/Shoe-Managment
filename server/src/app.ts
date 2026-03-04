@@ -64,16 +64,16 @@ app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ── Tenant context (applies to all /api routes) ─────────────
-app.use('/api', tenantContext);
+// ── Tenant context (applies to all /api/v1 routes) ──────────
+app.use('/api/v1', tenantContext);
 
-// ── Routes ───────────────────────────────────────────────────
-app.use('/api/auth', authRouter);
-app.use('/api/tenants', tenantRouter);          // super-admin only
-app.use('/api/users', userRouter);
-app.use('/api/inventory', inventoryRouter);
-app.use('/api/orders', orderRouter);
-app.use('/api/customers', customerRouter);
+// ── Routes (versioned) ───────────────────────────────────────
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/tenants', tenantRouter); // super-admin only
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/inventory', inventoryRouter);
+app.use('/api/v1/orders', orderRouter);
+app.use('/api/v1/customers', customerRouter);
 
 // ── 404 & Error handlers ─────────────────────────────────────
 app.use(notFound);

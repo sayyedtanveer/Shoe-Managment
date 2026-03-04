@@ -45,7 +45,7 @@ export class UserRepository {
 
     async update(id: string, shopId: string, data: Prisma.UserUpdateInput): Promise<SafeUser> {
         return prisma.user.update({
-            where: { id },
+            where: { id, shopId },
             data: { ...data },
             select: this.select,
         }) as Promise<SafeUser>;
@@ -53,7 +53,7 @@ export class UserRepository {
 
     async toggleActive(id: string, shopId: string, isActive: boolean): Promise<SafeUser> {
         return prisma.user.update({
-            where: { id },
+            where: { id, shopId },
             data: { isActive },
             select: this.select,
         }) as Promise<SafeUser>;

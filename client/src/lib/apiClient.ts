@@ -2,7 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 export const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
     withCredentials: true,
     headers: { 'Content-Type': 'application/json' },
     timeout: 15_000,
@@ -11,8 +11,14 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = useAuthStore.getState().accessToken;
-        if (token && config.headers) {
-            config.headers.Authorization = `Bearer ${token}`;
+        if (config.headers) {
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            const tenantSlug = import.meta.env.VITE_TENANT_SLUG;
+            if (tenantSlug && !config.headers['X-Tenant-Slug']) {
+                config.headers['X-Tenant-Slug'] = tenantSlug;
+            }
         }
         return config;
     },
