@@ -1,0 +1,118 @@
+import prisma from '@infrastructure/database/prisma';
+import { Brand, Category, Product, ProductVariant, Prisma } from '@prisma/client';
+
+// ── Brands ──────────────────────────────────────────────────
+
+export class BrandRepository {
+    findAll(shopId: string): Promise<Brand[]> {
+        return prisma.brand.findMany({ where: { shopId }, orderBy: { name: 'asc' } });
+    }
+    findById(id: number, shopId: string): Promise<Brand | null> {
+        return prisma.brand.findFirst({ where: { id, shopId } });
+    }
+    create(data: Prisma.BrandCreateInput): Promise<Brand> {
+        return prisma.brand.create({ data });
+    }
+    update(id: number, data: Prisma.BrandUpdateInput): Promise<Brand> {
+        return prisma.brand.update({ where: { id }, data });
+    }
+    delete(id: number): Promise<Brand> {
+        return prisma.brand.delete({ where: { id } });
+    }
+}
+
+// ── Categories ───────────────────────────────────────────────
+
+export class CategoryRepository {
+    findAll(shopId: string): Promise<Category[]> {
+        return prisma.category.findMany({
+            where: { shopId },
+            include: { children: true },
+            orderBy: { name: 'asc' },
+        });
+    }
+    findById(id: number, shopId: string): Promise<Category | null> {
+        return prisma.category.findFirst({ where: { id, shopId } });
+    }
+    create(data: Prisma.CategoryCreateInput): Promise<Category> {
+        return prisma.category.create({ data });
+    }
+    update(id: number, data: Prisma.CategoryUpdateInput): Promise<Category> {
+        return prisma.category.update({ where: { id }, data });
+    }
+    delete(id: number): Promise<Category> {
+        return prisma.category.delete({ where: { id } });
+    }
+}
+
+// ── Products ─────────────────────────────────────────────────
+
+export class ProductRepository {
+    findAll(
+        shopId: string,
+        filters: { brandId?: number; categoryId?: number; isActive?: boolean } = {}
+    ): Promise<Product[]> {
+        return prisma.product.findMany({
+            where: { shopId, ...filters },
+            include: { brand: true, category: true, variants: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    findById(id: string, shopId: string): Promise<Product | null> {
+        return prisma.product.findFirst({
+            where: { id, shopId },
+            include: { brand: true, category: true, variants: { include: { location: true } } },
+        });
+    }
+
+    create(data: Prisma.ProductCreateInput): Promise<Product> {
+        return prisma.product.create({ data, include: { brand: true, category: true } });
+    }
+
+    update(id: string, data: Prisma.ProductUpdateInput): Promise<Product> {
+        return prisma.product.update({ where: { id }, data });
+    }
+
+    delete(id: string): Promise<Product> {
+        return prisma.product.update({
+            where: { id },
+            data: { isActive: false },
+        });
+    }
+}
+
+// ── Product Variants ─────────────────────────────────────────
+
+export class VariantRepository {
+    findByProduct(productId: string): Promise<ProductVariant[]> {
+        return prisma.productVariant.findMany({
+            where: { productId },
+            include: { location: true },
+            orderBy: { size: 'asc' },
+        });
+    }
+
+    findById(id: string): Promise<ProductVariant | null> {
+        return prisma.productVariant.findUnique({ where: { id } });
+    }
+
+    create(data: Prisma.ProductVariantCreateInput): Promise<ProductVariant> {
+        return prisma.productVariant.create({ data });
+    }
+
+    update(id: string, data: Prisma.ProductVariantUpdateInput): Promise<ProductVariant> {
+        return prisma.productVariant.update({ where: { id }, data });
+    }
+
+    adjustStock(id: string, delta: number): Promise<ProductVariant> {
+        return prisma.productVariant.update({
+            where: { id },
+            data: { quantity: { increment: delta } },
+        });
+    }
+
+    delete(id: string): Promise<ProductVariant> {
+        return prisma.productVariant.delete({ where: { id } });
+    }
+}

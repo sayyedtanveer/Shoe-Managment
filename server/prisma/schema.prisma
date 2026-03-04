@@ -1,0 +1,283 @@
+// ============================================================
+// ShoeFlow – Prisma Schema
+// Shared multi-tenant database (shared schema, row-level tenant isolation)
+// Each tenant table carries a shop_id foreign key.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── SHOPS (tenants) ────────────────────────────────────────
+model Shop {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @db.VarChar(100)
+  slug       String    @unique @db.VarChar(50) // subdomain, e.g. 'friend-shop-dadar'
+  gstin      String?   @db.VarChar(15)
+  address    String?   @db.Text
+  phone      String?   @db.VarChar(15)
+  email      String?   @db.VarChar(100)
+  logoUrl    String?   @map("logo_url") @db.Text
+  plan       String    @default("basic") @db.VarChar(20) // free | basic | premium
+  isActive   Boolean   @default(true) @map("is_active")
+  settings   Json      @default("{}") // printer configs, etc.
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  // Relations
+  users              User[]
+  brands             Brand[]
+  categories         Category[]
+  products           Product[]
+  productVariants    ProductVariant[]
+  locations          Location[]
+  customers          Customer[]
+  orders             Order[]
+  orderItems         OrderItem[]
+  offlineOperations  OfflineOperation[]
+  auditLogs          AuditLog[]
+
+  @@map("shops")
+}
+
+// ─── USERS (employees of a shop) ────────────────────────────
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId       String    @map("shop_id") @db.Uuid
+  username     String    @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  fullName     String?   @map("full_name") @db.VarChar(100)
+  email        String?   @db.VarChar(100)
+  phone        String?   @db.VarChar(15)
+  role         String    @db.VarChar(20) // admin | inventory_manager | salesman | cashier
+  pinCode      String?   @map("pin_code") @db.VarChar(6) // quick mobile login
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  shop               Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  salesmanOrders     Order[]            @relation("SalesmanOrders")
+  cashierOrders      Order[]            @relation("CashierOrders")
+  offlineOperations  OfflineOperation[]
+  auditLogs          AuditLog[]
+
+  @@unique([shopId, username])
+  @@index([shopId], name: "idx_users_shop_id")
+  @@map("users")
+}
+
+// ─── BRANDS ─────────────────────────────────────────────────
+model Brand {
+  id      Int    @id @default(autoincrement())
+  shopId  String @map("shop_id") @db.Uuid
+  name    String @db.VarChar(100)
+  gstRate Int    @default(5) @map("gst_rate")
+
+  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([shopId, name])
+  @@index([shopId], name: "idx_brands_shop_id")
+  @@map("brands")
+}
+
+// ─── CATEGORIES ─────────────────────────────────────────────
+model Category {
+  id       Int    @id @default(autoincrement())
+  shopId   String @map("shop_id") @db.Uuid
+  name     String @db.VarChar(100)
+  parentId Int?   @map("parent_id")
+
+  shop     Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+  products Product[]
+
+  @@unique([shopId, name])
+  @@index([shopId], name: "idx_categories_shop_id")
+  @@map("categories")
+}
+
+// ─── PRODUCTS (base model) ───────────────────────────────────
+model Product {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId         String    @map("shop_id") @db.Uuid
+  brandId        Int?      @map("brand_id")
+  categoryId     Int?      @map("category_id")
+  model          String    @db.VarChar(200)
+  description    String?   @db.Text
+  purchasePrice  Decimal?  @map("purchase_price") @db.Decimal(10, 2)
+  sellingPrice   Decimal?  @map("selling_price") @db.Decimal(10, 2)
+  mrp            Decimal?  @db.Decimal(10, 2)
+  gstRate        Int?      @map("gst_rate")
+  images         String[]  @default([]) // array of image URLs
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  shop     Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  brand    Brand?           @relation(fields: [brandId], references: [id])
+  category Category?        @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
+
+  @@index([shopId], name: "idx_products_shop_id")
+  @@map("products")
+}
+
+// ─── PRODUCT VARIANTS ────────────────────────────────────────
+model ProductVariant {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId     String    @map("shop_id") @db.Uuid
+  productId  String    @map("product_id") @db.Uuid
+  size       Decimal?  @db.Decimal(4, 1) // e.g. 7, 8, 9.5
+  color      String?   @db.VarChar(50)
+  quantity   Int       @default(0)
+  locationId Int?      @map("location_id")
+  qrCode     String?   @unique @map("qr_code") @db.VarChar(255)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location   Location?   @relation(fields: [locationId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([shopId], name: "idx_variants_shop_id")
+  @@index([productId], name: "idx_variants_product_id")
+  @@map("product_variants")
+}
+
+// ─── LOCATIONS ────────────────────────────────────────────────
+model Location {
+  id       Int     @id @default(autoincrement())
+  shopId   String  @map("shop_id") @db.Uuid
+  name     String  @db.VarChar(50)
+  isActive Boolean @default(true) @map("is_active")
+
+  shop     Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  variants ProductVariant[]
+
+  @@unique([shopId, name])
+  @@index([shopId], name: "idx_locations_shop_id")
+  @@map("locations")
+}
+
+// ─── CUSTOMERS ────────────────────────────────────────────────
+model Customer {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId          String    @map("shop_id") @db.Uuid
+  phone           String?   @unique @db.VarChar(15)
+  name            String?   @db.VarChar(100)
+  email           String?   @db.VarChar(100)
+  address         String?   @db.Text
+  birthday        DateTime? @db.Date
+  anniversary     DateTime? @db.Date
+  preferences     Json?     // favourite brands, sizes
+  totalPurchases  Decimal   @default(0) @map("total_purchases") @db.Decimal(10, 2)
+  loyaltyPoints   Int       @default(0) @map("loyalty_points")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([shopId], name: "idx_customers_shop_id")
+  @@index([phone], name: "idx_customers_phone")
+  @@map("customers")
+}
+
+// ─── ORDERS ───────────────────────────────────────────────────
+model Order {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId         String    @map("shop_id") @db.Uuid
+  orderNumber    String    @map("order_number") @db.VarChar(20) // shop-sequential
+  salesmanId     String?   @map("salesman_id") @db.Uuid
+  cashierId      String?   @map("cashier_id") @db.Uuid
+  customerId     String?   @map("customer_id") @db.Uuid
+  status         String    @default("pending") @db.VarChar(20) // pending|processing|completed|cancelled
+  subtotal       Decimal?  @db.Decimal(10, 2)
+  discount       Decimal   @default(0) @db.Decimal(10, 2)
+  tax            Decimal?  @db.Decimal(10, 2)
+  total          Decimal?  @db.Decimal(10, 2)
+  paymentMethod  String?   @map("payment_method") @db.VarChar(20) // cash|card|upi|mixed
+  paymentDetails Json?     @map("payment_details")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+  synced         Boolean   @default(true) // for offline orders
+
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  salesman   User?       @relation("SalesmanOrders", fields: [salesmanId], references: [id])
+  cashier    User?       @relation("CashierOrders", fields: [cashierId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([shopId], name: "idx_orders_shop_id")
+  @@index([status], name: "idx_orders_status")
+  @@index([createdAt], name: "idx_orders_created_at")
+  @@map("orders")
+}
+
+// ─── ORDER ITEMS ──────────────────────────────────────────────
+model OrderItem {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId       String   @map("shop_id") @db.Uuid
+  orderId      String   @map("order_id") @db.Uuid
+  variantId    String?  @map("variant_id") @db.Uuid
+  quantity     Int
+  priceAtTime  Decimal? @map("price_at_time") @db.Decimal(10, 2) // selling price at time of sale
+  discount     Decimal  @default(0) @db.Decimal(10, 2)
+  total        Decimal? @db.Decimal(10, 2)
+
+  shop    Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([shopId], name: "idx_order_items_shop_id")
+  @@index([orderId], name: "idx_order_items_order_id")
+  @@map("order_items")
+}
+
+// ─── OFFLINE OPERATIONS QUEUE ─────────────────────────────────
+model OfflineOperation {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId        String    @map("shop_id") @db.Uuid
+  userId        String?   @map("user_id") @db.Uuid
+  operationType String?   @map("operation_type") @db.VarChar(50) // create_order | update_inventory
+  data          Json?
+  synced        Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  syncedAt      DateTime? @map("synced_at")
+
+  shop Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([shopId], name: "idx_offline_shop_id")
+  @@index([synced], name: "idx_offline_synced")
+  @@map("offline_operations")
+}
+
+// ─── AUDIT LOGS ───────────────────────────────────────────────
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  shopId     String   @map("shop_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String?  @db.VarChar(100)
+  entityType String?  @map("entity_type") @db.VarChar(50) // product | order | user | …
+  entityId   String?  @map("entity_id") @db.VarChar(100)
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address") // stored as text (INET mapped)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  shop Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([shopId], name: "idx_audit_shop_id")
+  @@map("audit_logs")
+}
