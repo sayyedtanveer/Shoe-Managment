@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 // ── Axios instance ──────────────────────────────────────────
 export const apiClient = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
     withCredentials: true,           // send httpOnly cookies
     headers: { 'Content-Type': 'application/json' },
     timeout: 15_000,

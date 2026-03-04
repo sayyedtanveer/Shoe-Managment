@@ -41,8 +41,8 @@ export function authenticate(
             throw new UnauthorizedError('No authentication token provided');
         }
 
-        const secret = process.env.JWT_ACCESS_SECRET;
-        if (!secret) throw new Error('JWT_ACCESS_SECRET is not set');
+        const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_ACCESS_SECRET or JWT_SECRET is not set');
 
         const decoded = jwt.verify(token, secret) as JwtPayload;
         req.user = {

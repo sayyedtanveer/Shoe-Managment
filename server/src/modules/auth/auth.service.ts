@@ -35,18 +35,28 @@ export class AuthService {
     // ─── Token generators ───────────────────────────────────────
 
     private generateAccessToken(user: User): string {
-        const secret = process.env.JWT_ACCESS_SECRET!;
+        const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_ACCESS_SECRET or JWT_SECRET is not set');
+
+        const expiresIn =
+            (process.env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn']) ?? '15m';
+
         return jwt.sign(
             { sub: user.id, shopId: user.shopId, role: user.role },
             secret,
-            { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m' }
+            { expiresIn }
         );
     }
 
     private generateRefreshToken(user: User): string {
-        const secret = process.env.JWT_REFRESH_SECRET!;
+        const secret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_REFRESH_SECRET or JWT_SECRET is not set');
+
+        const expiresIn =
+            (process.env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn']) ?? '7d';
+
         return jwt.sign({ sub: user.id, shopId: user.shopId }, secret, {
-            expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+            expiresIn,
         });
     }
 
@@ -94,7 +104,8 @@ export class AuthService {
 
     // ─── Refresh tokens ─────────────────────────────────────────
     async refreshTokens(incomingRefreshToken: string): Promise<TokenPair> {
-        const secret = process.env.JWT_REFRESH_SECRET!;
+        const secret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_REFRESH_SECRET or JWT_SECRET is not set');
 
         let payload: { sub: string; shopId: string };
         try {

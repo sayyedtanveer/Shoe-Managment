@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import {
     LayoutDashboard, Package, ShoppingCart, Users,
-    ChartBar, Settings, LogOut, Menu, X, Footprints
+    BarChart3, Settings, LogOut, Menu, X, Footprints
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,7 +11,7 @@ const navItems = [
     { to: '/admin/inventory', icon: Package, label: 'Inventory' },
     { to: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
     { to: '/admin/customers', icon: Users, label: 'Customers' },
-    { to: '/admin/reports', icon: ChartBar, label: 'Reports' },
+    { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 
