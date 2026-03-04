@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { UnauthorizedError } from '@core/ApiError';
 
 export interface JwtPayload {
-    sub: string;    // user id
+    sub: string;
     shopId: string;
     role: string;
     iat?: number;
@@ -12,27 +12,19 @@ export interface JwtPayload {
 
 /**
  * Authenticate middleware.
- * Reads the JWT access token from:
- *   1. Authorization: Bearer <token>   (web / mobile API calls)
- *   2. accessToken httpOnly cookie      (web SPA)
- *
- * Attaches req.user on success.
+ * Reads JWT access tokens from:
+ *   1) Authorization header (mobile + web APIs)
+ *   2) accessToken httpOnly cookie (web)
  */
-export function authenticate(
-    req: Request,
-    res: Response,
-    next: NextFunction
-): void {
+export function authenticate(req: Request, _res: Response, next: NextFunction): void {
     try {
         let token: string | undefined;
 
-        // 1. Bearer token (Authorization header)
         const authHeader = req.headers.authorization;
         if (authHeader?.startsWith('Bearer ')) {
             token = authHeader.slice(7);
         }
 
-        // 2. httpOnly cookie fallback
         if (!token && req.cookies?.accessToken) {
             token = req.cookies.accessToken as string;
         }
@@ -41,8 +33,8 @@ export function authenticate(
             throw new UnauthorizedError('No authentication token provided');
         }
 
-        const secret = process.env.JWT_ACCESS_SECRET;
-        if (!secret) throw new Error('JWT_ACCESS_SECRET is not set');
+        const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_ACCESS_SECRET or JWT_SECRET is not set');
 
         const decoded = jwt.verify(token, secret) as JwtPayload;
         req.user = {
@@ -55,8 +47,9 @@ export function authenticate(
     } catch (err) {
         if (err instanceof jwt.JsonWebTokenError) {
             next(new UnauthorizedError('Invalid or expired token'));
-        } else {
-            next(err);
+            return;
         }
+
+        next(err);
     }
 }

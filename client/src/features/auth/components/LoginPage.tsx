@@ -22,13 +22,15 @@ export default function LoginPage() {
             const response = await apiClient.post('/auth/login', {
                 username,
                 password,
+                clientType: 'web',
             });
 
-            const { user, accessToken } = response.data.data;
-            setAuth(user, accessToken);
+            const { user, accessToken, refreshToken } = response.data.data;
+            setAuth(user, accessToken, refreshToken, 'web');
 
             if (user.role === 'admin') navigate('/admin');
-            else if (user.role === 'salesman' || user.role === 'cashier') navigate('/counter');
+            else if (user.role === 'salesman') navigate('/salesman');
+            else if (user.role === 'cashier') navigate('/counter');
             else navigate('/');
 
         } catch (err: any) {

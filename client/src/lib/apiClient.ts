@@ -1,7 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
-// ── Axios instance ──────────────────────────────────────────
 export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
     withCredentials: true,
@@ -9,7 +8,6 @@ export const apiClient = axios.create({
     timeout: 15_000,
 });
 
-// ── Request interceptor: attach Bearer token ────────────────
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = useAuthStore.getState().accessToken;
@@ -63,19 +61,23 @@ apiClient.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const { data } = await apiClient.post<{ data: { accessToken: string } }>('/auth/refresh');
-                const newToken = data.data.accessToken;
+                const state = useAuthStore.getState();
+                const { data } = await apiClient.post<{ data: { accessToken: string; refreshToken: string } }>('/auth/refresh', {
+                    clientType: state.authMode,
+                    refreshToken: state.authMode === 'mobile' ? state.refreshToken : undefined,
+                });
+                const { accessToken, refreshToken } = data.data;
 
-                const { user } = useAuthStore.getState();
+                const { user, authMode } = useAuthStore.getState();
                 if (user) {
-                    useAuthStore.getState().setAuth(user, newToken);
+                    useAuthStore.getState().setAuth(user, accessToken, refreshToken, authMode);
                 }
 
                 if (originalRequest.headers) {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 }
 
-                processQueue(null, newToken);
+                processQueue(null, accessToken);
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError as AxiosError, null);
