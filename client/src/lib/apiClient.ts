@@ -3,8 +3,8 @@ import { useAuthStore } from '@/stores/authStore';
 
 // ── Axios instance ──────────────────────────────────────────
 export const apiClient = axios.create({
-    baseURL: '/api',
-    withCredentials: true,           // send httpOnly cookies
+    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' },
     timeout: 15_000,
 });
@@ -21,7 +21,6 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// ── Response interceptor: silent token refresh on 401 ───────
 let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (value: unknown) => void;
@@ -30,11 +29,8 @@ let failedQueue: Array<{
 
 function processQueue(error: AxiosError | null, token: string | null = null) {
     failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
+        if (error) prom.reject(error);
+        else prom.resolve(token);
     });
     failedQueue = [];
 }
@@ -42,16 +38,15 @@ function processQueue(error: AxiosError | null, token: string | null = null) {
 apiClient.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-        // Only attempt refresh on 401 (but NOT for the refresh endpoint itself)
         if (
             error.response?.status === 401 &&
+            originalRequest &&
             !originalRequest._retry &&
             !originalRequest.url?.includes('/auth/refresh')
         ) {
             if (isRefreshing) {
-                // Queue the request while refresh is in progress
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
@@ -71,7 +66,6 @@ apiClient.interceptors.response.use(
                 const { data } = await apiClient.post<{ data: { accessToken: string } }>('/auth/refresh');
                 const newToken = data.data.accessToken;
 
-                // Update the store
                 const { user } = useAuthStore.getState();
                 if (user) {
                     useAuthStore.getState().setAuth(user, newToken);
@@ -85,7 +79,6 @@ apiClient.interceptors.response.use(
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError as AxiosError, null);
-                // Refresh failed – force logout
                 useAuthStore.getState().clearAuth();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);

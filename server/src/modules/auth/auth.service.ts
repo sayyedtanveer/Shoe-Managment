@@ -32,21 +32,33 @@ export class AuthService {
         this.repo = new AuthRepository();
     }
 
+    private getJwtExpiry(value: string | undefined, fallback: jwt.SignOptions['expiresIn']): jwt.SignOptions['expiresIn'] {
+        return (value as jwt.SignOptions['expiresIn']) ?? fallback;
+    }
+
     // ─── Token generators ───────────────────────────────────────
 
     private generateAccessToken(user: User): string {
-        const secret = process.env.JWT_ACCESS_SECRET!;
+        const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) {
+            throw new UnauthorizedError('JWT access secret is not configured');
+        }
+
         return jwt.sign(
             { sub: user.id, shopId: user.shopId, role: user.role },
             secret,
-            { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m' }
+            { expiresIn: this.getJwtExpiry(process.env.JWT_ACCESS_EXPIRES_IN, '15m') }
         );
     }
 
     private generateRefreshToken(user: User): string {
-        const secret = process.env.JWT_REFRESH_SECRET!;
+        const secret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) {
+            throw new UnauthorizedError('JWT refresh secret is not configured');
+        }
+
         return jwt.sign({ sub: user.id, shopId: user.shopId }, secret, {
-            expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+            expiresIn: this.getJwtExpiry(process.env.JWT_REFRESH_EXPIRES_IN, '7d'),
         });
     }
 
@@ -94,7 +106,10 @@ export class AuthService {
 
     // ─── Refresh tokens ─────────────────────────────────────────
     async refreshTokens(incomingRefreshToken: string): Promise<TokenPair> {
-        const secret = process.env.JWT_REFRESH_SECRET!;
+        const secret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;
+        if (!secret) {
+            throw new UnauthorizedError('JWT refresh secret is not configured');
+        }
 
         let payload: { sub: string; shopId: string };
         try {
