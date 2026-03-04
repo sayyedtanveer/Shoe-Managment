@@ -137,7 +137,10 @@ export class InventoryService {
     }
 
     // ── Products ─────────────────────────────────────────────────
-    listProducts(shopId: string, filters: { brandId?: number; categoryId?: number }) {
+    listProducts(
+        shopId: string,
+        filters: { brandId?: number; categoryId?: number; page: number; pageSize: number; search?: string }
+    ) {
         return this.products.findAll(shopId, filters);
     }
 
@@ -202,10 +205,18 @@ export class InventoryService {
         return this.ensureVariantInShop(id, shopId);
     }
 
-    createVariant(shopId: string, productId: string, dto: {
-        size?: number; color?: string; quantity?: number; locationId?: number; qrCode?: string;
-    }) {
-        const data: Prisma.ProductVariantCreateInput = {
+    createVariantsBulk(
+        shopId: string,
+        productId: string,
+        variants: {
+            size?: number;
+            color?: string;
+            quantity?: number;
+            locationId?: number;
+            qrCode?: string;
+        }[]
+    ) {
+        const data: Prisma.ProductVariantCreateInput[] = variants.map((dto) => ({
             shop: { connect: { id: shopId } },
             product: { connect: { id: productId } },
             size: dto.size,
@@ -213,8 +224,9 @@ export class InventoryService {
             quantity: dto.quantity ?? 0,
             qrCode: dto.qrCode,
             ...(dto.locationId && { location: { connect: { id: dto.locationId } } }),
-        };
-        return this.variants.create(data);
+        }));
+
+        return Promise.all(data.map((d) => this.variants.create(d)));
     }
 
     async adjustStock(id: string, shopId: string, delta: number) {

@@ -7,6 +7,7 @@ import { Eye, EyeOff, Store, Loader2 } from 'lucide-react';
 export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +29,15 @@ export default function LoginPage() {
             const { user, accessToken, refreshToken } = response.data.data;
             setAuth(user, accessToken, refreshToken, 'web');
 
+            if (!rememberMe) {
+                // Hint for future: clear auth on next load if not remembered
+                sessionStorage.setItem('shoeflow_skip_remember', '1');
+            } else {
+                sessionStorage.removeItem('shoeflow_skip_remember');
+            }
+
             if (user.role === 'admin') navigate('/admin');
+            else if (user.role === 'inventory_manager') navigate('/admin/inventory');
             else if (user.role === 'salesman') navigate('/salesman');
             else if (user.role === 'cashier') navigate('/counter');
             else navigate('/');
@@ -71,6 +80,18 @@ export default function LoginPage() {
                                 placeholder="Enter your username"
                                 required
                             />
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                            <label className="inline-flex items-center gap-2 text-neutral-300">
+                                <input
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="rounded border-neutral-600 bg-neutral-900 text-teal-500 focus:ring-teal-500/60"
+                                />
+                                <span>Remember me</span>
+                            </label>
                         </div>
 
                         <div>

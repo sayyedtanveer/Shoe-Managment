@@ -104,6 +104,41 @@ export class AuthService {
         };
     }
 
+    // ─── PIN login ──────────────────────────────────────────────
+    async pinLogin(
+        shopId: string,
+        username: string,
+        pin: string
+    ): Promise<{ tokens: TokenPair; user: AuthUser }> {
+        const user = await this.repo.findByUsername(shopId, username);
+
+        if (!user || !user.pinCode) {
+            throw new UnauthorizedError('Invalid PIN');
+        }
+
+        const ok = await bcrypt.compare(pin, user.pinCode);
+        if (!ok) {
+            throw new UnauthorizedError('Invalid PIN');
+        }
+
+        const accessToken = this.generateAccessToken(user);
+        const refreshToken = this.generateRefreshToken(user);
+
+        await this.storeRefreshToken(user.id, refreshToken);
+        await this.repo.recordLogin(user.id);
+
+        return {
+            tokens: { accessToken, refreshToken },
+            user: {
+                id: user.id,
+                username: user.username,
+                fullName: user.fullName,
+                role: user.role,
+                shopId: user.shopId,
+            },
+        };
+    }
+
     // ─── Refresh tokens ─────────────────────────────────────────
     async refreshTokens(incomingRefreshToken: string): Promise<TokenPair> {
         const secret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;

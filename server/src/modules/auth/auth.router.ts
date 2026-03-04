@@ -7,6 +7,7 @@ const ctrl = new AuthController();
 
 // Public routes
 router.post('/login', ctrl.login);
+router.post('/pin-login', ctrl.pinLogin);
 router.post('/refresh', ctrl.refresh);
 
 // Protected routes

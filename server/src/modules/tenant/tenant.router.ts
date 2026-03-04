@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import { TenantController } from './tenant.controller';
-import { authenticate } from '@middlewares/authenticate';
-import { authorize } from '@middlewares/authorize';
+import { platformApiKey } from '@middlewares/platformApiKey';
 
 const router = Router();
 const ctrl = new TenantController();
 
-// Super-admin only (no shopId – works on root domain)
-router.use(authenticate, authorize('admin'));
+// Platform-level API key protection (no shopId – root domain)
+router.use(platformApiKey);
 
 router.get('/', ctrl.getAll);
 router.get('/:id', ctrl.getById);

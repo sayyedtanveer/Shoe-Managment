@@ -72,12 +72,31 @@ export class CategoryRepository {
 export class ProductRepository {
     findAll(
         shopId: string,
-        filters: { brandId?: number; categoryId?: number; isActive?: boolean } = {}
+        filters: {
+            brandId?: number;
+            categoryId?: number;
+            isActive?: boolean;
+            page: number;
+            pageSize: number;
+            search?: string;
+        }
     ): Promise<Product[]> {
+        const where: Prisma.ProductWhereInput = {
+            shopId,
+            ...(filters.brandId && { brandId: filters.brandId }),
+            ...(filters.categoryId && { categoryId: filters.categoryId }),
+            ...(filters.isActive !== undefined && { isActive: filters.isActive }),
+            ...(filters.search && {
+                model: { contains: filters.search, mode: 'insensitive' },
+            }),
+        };
+
         return prisma.product.findMany({
-            where: { shopId, ...filters },
+            where,
             include: { brand: true, category: true, variants: true },
             orderBy: { createdAt: 'desc' },
+            skip: (filters.page - 1) * filters.pageSize,
+            take: filters.pageSize,
         });
     }
 

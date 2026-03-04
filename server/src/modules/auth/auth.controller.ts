@@ -16,6 +16,12 @@ const refreshSchema = z.object({
     clientType: z.enum(['web', 'mobile']).optional().default('web'),
 });
 
+const pinLoginSchema = z.object({
+    username: z.string().min(1),
+    pin: z.string().min(4).max(6),
+    clientType: z.enum(['web', 'mobile']).optional().default('mobile'),
+});
+
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -59,6 +65,39 @@ export class AuthController extends BaseController {
 
         // Mobile clients should store tokens in secure app storage.
         sendSuccess(res, { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }, 'Login successful');
+    });
+
+    pinLogin = this.asyncHandler(async (req: Request, res: Response) => {
+        const parsed = pinLoginSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw new BadRequestError('Validation failed', parsed.error.errors);
+        }
+
+        const shopId = req.shopId;
+        if (!shopId) throw new BadRequestError('Tenant not resolved. Use X-Tenant-Slug header or subdomain.');
+
+        const { tokens, user } = await this.service.pinLogin(
+            shopId,
+            parsed.data.username,
+            parsed.data.pin
+        );
+
+        if (parsed.data.clientType === 'web') {
+            res.cookie('accessToken', tokens.accessToken, {
+                ...COOKIE_OPTIONS,
+                maxAge: 15 * 60 * 1000,
+            });
+            res.cookie('refreshToken', tokens.refreshToken, {
+                ...COOKIE_OPTIONS,
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+        }
+
+        sendSuccess(
+            res,
+            { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
+            'PIN login successful'
+        );
     });
 
     refresh = this.asyncHandler(async (req: Request, res: Response) => {

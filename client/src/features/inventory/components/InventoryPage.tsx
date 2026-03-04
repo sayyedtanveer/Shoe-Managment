@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useInventoryFilterStore } from '@/stores/inventoryFilterStore';
 
 interface Brand {
     id: number;
@@ -24,15 +25,32 @@ interface Product {
     variants: ProductVariant[];
 }
 
-async function fetchProducts(): Promise<Product[]> {
-    const { data } = await apiClient.get<{ data: Product[] }>('/inventory/products');
+async function fetchProducts(params: {
+    brandId?: number;
+    categoryId?: number;
+    search?: string;
+    page: number;
+    pageSize: number;
+}): Promise<Product[]> {
+    const { data } = await apiClient.get<{ data: Product[] }>('/inventory/products', {
+        params,
+    });
     return data.data;
 }
 
 export function InventoryPage() {
+    const filters = useInventoryFilterStore();
+
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['inventory', 'products'],
-        queryFn: fetchProducts,
+        queryKey: ['inventory', 'products', filters],
+        queryFn: () =>
+            fetchProducts({
+                brandId: filters.brandId,
+                categoryId: filters.categoryId,
+                search: filters.search,
+                page: filters.page,
+                pageSize: filters.pageSize,
+            }),
     });
 
     if (isLoading) {
@@ -47,11 +65,21 @@ export function InventoryPage() {
 
     return (
         <div className="space-y-6">
-            <div>
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div>
                 <h1 className="text-2xl font-bold mb-1">Inventory</h1>
                 <p className="text-sm text-neutral-400">
                     Overview of products, variants, and stock levels for this shop.
                 </p>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                    <input
+                        placeholder="Search model…"
+                        className="rounded-md bg-neutral-900 border border-neutral-700 px-3 py-1.5 text-sm text-white"
+                        value={filters.search ?? ''}
+                        onChange={(e) => filters.setSearch(e.target.value || undefined)}
+                    />
+                </div>
             </div>
 
             <div className="bg-neutral-900/50 border border-neutral-700 rounded-xl overflow-hidden">

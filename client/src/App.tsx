@@ -4,10 +4,13 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { CounterLayout } from '@/layouts/CounterLayout';
 import LoginPage from '@/features/auth/components/LoginPage';
+import { PinLoginPage } from '@/features/auth/components/PinLoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { InventoryPage } from '@/features/inventory/components/InventoryPage';
 import { CustomersPage } from '@/features/customers/components/CustomersPage';
 import { OrdersPage } from '@/features/orders/components/OrdersPage';
+import { CounterOrdersPage } from '@/features/counter/components/CounterOrdersPage';
+import { UsersPage } from '@/features/users/components/UsersPage';
 
 export default function App() {
     return (
@@ -15,6 +18,7 @@ export default function App() {
             {/* ── Public routes ───────────────────────────────── */}
             <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/pin-login" element={<PinLoginPage />} />
             </Route>
 
             {/* ── Admin routes ─────────────────────────────────── */}
@@ -30,6 +34,7 @@ export default function App() {
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="orders" element={<OrdersPage />} />
+                <Route path="users" element={<UsersPage />} />
             </Route>
 
             {/* ── Counter / Cashier routes ──────────────────────── */}
@@ -41,7 +46,7 @@ export default function App() {
                     </ProtectedRoute>
                 }
             >
-                <Route index element={<DashboardPage />} />
+                <Route index element={<CounterOrdersPage />} />
             </Route>
 
             {/* ── Salesman routes ───────────────────────────────── */}
