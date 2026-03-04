@@ -1,6 +1,7 @@
 import { Order } from '@prisma/client';
 import { OrderRepository, CreateOrderDto } from './order.repository';
 import { NotFoundError } from '@core/ApiError';
+import { recordAudit } from '@core/audit';
 
 export class OrderService {
     private readonly repo: OrderRepository;
@@ -14,10 +15,29 @@ export class OrderService {
         return order;
     }
 
-    create(dto: CreateOrderDto): Promise<Order> { return this.repo.createWithItems(dto); }
+    async create(dto: CreateOrderDto): Promise<Order> {
+        const order = await this.repo.createWithItems(dto);
+        await recordAudit({
+            shopId: dto.shopId,
+            action: 'order.create',
+            entityType: 'order',
+            entityId: order.id,
+            newData: order,
+        });
+        return order;
+    }
 
     async updateStatus(id: string, shopId: string, status: string): Promise<Order> {
-        await this.getById(id, shopId);
-        return this.repo.updateStatus(id, shopId, status);
+        const before = await this.getById(id, shopId);
+        const updated = await this.repo.updateStatus(id, shopId, status);
+        await recordAudit({
+            shopId,
+            action: 'order.updateStatus',
+            entityType: 'order',
+            entityId: id,
+            oldData: before,
+            newData: updated,
+        });
+        return updated;
     }
 }

@@ -7,6 +7,7 @@ import {
     VariantRepository,
 } from './inventory.repository';
 import { NotFoundError, BadRequestError } from '@core/ApiError';
+import { recordAudit } from '@core/audit';
 
 export class InventoryService {
     private brands = new BrandRepository();
@@ -55,13 +56,31 @@ export class InventoryService {
     }
 
     async updateBrand(id: number, shopId: string, data: { name?: string; gstRate?: number }) {
-        await this.ensureBrandInShop(id, shopId);
-        return this.brands.update(id, data);
+        const before = await this.ensureBrandInShop(id, shopId);
+        const updated = await this.brands.update(id, data);
+        await recordAudit({
+            shopId,
+            action: 'brand.update',
+            entityType: 'brand',
+            entityId: String(id),
+            oldData: before,
+            newData: updated,
+        });
+        return updated;
     }
 
     async deleteBrand(id: number, shopId: string) {
-        await this.ensureBrandInShop(id, shopId);
-        return this.brands.delete(id);
+        const before = await this.ensureBrandInShop(id, shopId);
+        const deleted = await this.brands.delete(id);
+        await recordAudit({
+            shopId,
+            action: 'brand.delete',
+            entityType: 'brand',
+            entityId: String(id),
+            oldData: before,
+            newData: deleted,
+        });
+        return deleted;
     }
 
     // ── Locations ────────────────────────────────────────────────
@@ -146,13 +165,31 @@ export class InventoryService {
     }
 
     async updateProduct(id: string, shopId: string, data: Prisma.ProductUpdateInput) {
-        await this.ensureProductInShop(id, shopId);
-        return this.products.update(id, data);
+        const before = await this.ensureProductInShop(id, shopId);
+        const updated = await this.products.update(id, data);
+        await recordAudit({
+            shopId,
+            action: 'product.update',
+            entityType: 'product',
+            entityId: id,
+            oldData: before,
+            newData: updated,
+        });
+        return updated;
     }
 
     async softDeleteProduct(id: string, shopId: string) {
-        await this.ensureProductInShop(id, shopId);
-        return this.products.delete(id);
+        const before = await this.ensureProductInShop(id, shopId);
+        const deleted = await this.products.delete(id);
+        await recordAudit({
+            shopId,
+            action: 'product.deactivate',
+            entityType: 'product',
+            entityId: id,
+            oldData: before,
+            newData: deleted,
+        });
+        return deleted;
     }
 
     // ── Variants ─────────────────────────────────────────────────

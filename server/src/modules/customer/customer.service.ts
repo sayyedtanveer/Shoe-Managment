@@ -1,6 +1,7 @@
 import { Customer, Prisma } from '@prisma/client';
 import { CustomerRepository } from './customer.repository';
 import { NotFoundError } from '@core/ApiError';
+import { recordAudit } from '@core/audit';
 
 export interface CreateCustomerDto {
     phone?: string;
@@ -39,12 +40,23 @@ export class CustomerService {
     }
 
     async update(id: string, shopId: string, dto: Partial<CreateCustomerDto>): Promise<Customer> {
-        await this.getById(id, shopId);
-        return this.repo.update(id, {
+        const before = await this.getById(id, shopId);
+        const updated = await this.repo.update(id, {
             ...dto,
             birthday: dto.birthday ? new Date(dto.birthday) : undefined,
             anniversary: dto.anniversary ? new Date(dto.anniversary) : undefined,
         } as Prisma.CustomerUpdateInput);
+
+        await recordAudit({
+            shopId,
+            action: 'customer.update',
+            entityType: 'customer',
+            entityId: id,
+            oldData: before,
+            newData: updated,
+        });
+
+        return updated;
     }
 
     addLoyaltyPoints(id: string, points: number) {

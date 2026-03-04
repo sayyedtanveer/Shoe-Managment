@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { UserRepository, SafeUser } from './user.repository';
 import { ConflictError, NotFoundError } from '@core/ApiError';
+import { recordAudit } from '@core/audit';
 
 export interface CreateUserDto {
     username: string;
@@ -50,16 +51,51 @@ export class UserService {
             role: dto.role,
             pinCode: dto.pinCode,
         };
-        return this.repo.create(data);
+        const created = await this.repo.create(data);
+
+        await recordAudit({
+            shopId,
+            userId: undefined,
+            action: 'user.create',
+            entityType: 'user',
+            entityId: created.id,
+            newData: created as unknown as Prisma.JsonValue,
+        });
+
+        return created;
     }
 
     async update(id: string, shopId: string, dto: UpdateUserDto): Promise<SafeUser> {
-        await this.getById(id, shopId);
-        return this.repo.update(id, shopId, dto as Prisma.UserUpdateInput);
+        const before = await this.getById(id, shopId);
+        const updated = await this.repo.update(id, shopId, dto as Prisma.UserUpdateInput);
+
+        await recordAudit({
+            shopId,
+            userId: undefined,
+            action: 'user.update',
+            entityType: 'user',
+            entityId: id,
+            oldData: before as unknown as Prisma.JsonValue,
+            newData: updated as unknown as Prisma.JsonValue,
+        });
+
+        return updated;
     }
 
     async toggleActive(id: string, shopId: string, isActive: boolean): Promise<SafeUser> {
-        await this.getById(id, shopId);
-        return this.repo.toggleActive(id, shopId, isActive);
+        const before = await this.getById(id, shopId);
+        const updated = await this.repo.toggleActive(id, shopId, isActive);
+
+        await recordAudit({
+            shopId,
+            userId: undefined,
+            action: isActive ? 'user.activate' : 'user.deactivate',
+            entityType: 'user',
+            entityId: id,
+            oldData: before as unknown as Prisma.JsonValue,
+            newData: updated as unknown as Prisma.JsonValue,
+        });
+
+        return updated;
     }
 }

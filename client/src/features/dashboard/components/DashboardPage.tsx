@@ -2,11 +2,17 @@ import { useAuthStore } from '@/stores/authStore';
 
 export function DashboardPage() {
     const user = useAuthStore((state) => state.user);
+    const tenantSlug = import.meta.env.VITE_TENANT_SLUG;
 
     return (
         <div className="p-8 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)]">
             <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
             <p className="text-lg">Welcome back, {user?.username}!</p>
+            {tenantSlug && (
+                <p className="mt-1 text-sm text-neutral-400">
+                    Tenant: <span className="font-mono text-neutral-200">{tenantSlug}</span>
+                </p>
+            )}
             <div className="mt-8 bg-neutral-800 rounded-xl p-6 shadow-sm border border-neutral-700/50">
                 <h2 className="text-xl font-semibold mb-2">Quick Stats</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
