@@ -1,0 +1,14 @@
+{
+  "name": "shoe-management",
+  "version": "1.0.0",
+  "description": "Shoe Management System - Client & Server",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces"
+  }
+}

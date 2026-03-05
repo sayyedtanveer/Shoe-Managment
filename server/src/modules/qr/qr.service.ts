@@ -1,4 +1,6 @@
+// @ts-ignore
 import PDFDocument from 'pdfkit';
+// @ts-ignore
 import qrcode from 'qrcode';
 import prisma from '@infrastructure/database/prisma';
 import { BadRequestError, NotFoundError } from '@core/ApiError';
@@ -36,7 +38,7 @@ export class QrService {
 
         const doc = new PDFDocument({ size: 'A4', margin: 36 });
         const chunks: Buffer[] = [];
-        doc.on('data', (c) => chunks.push(c));
+        doc.on('data', (c: Buffer) => chunks.push(c));
 
         const cols = 2;
         const rows = 4;

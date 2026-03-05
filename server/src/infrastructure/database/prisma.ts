@@ -21,16 +21,14 @@ if (process.env.NODE_ENV !== 'production') {
     global.__prisma = prisma;
 
     // Log slow queries in development
-    // @ts-expect-error – Prisma event typing
-    prisma.$on('query', (e: { query: string; duration: number }) => {
+    (prisma.$on as any)('query', (e: any) => {
         if (e.duration > 200) {
             logger.warn(`Slow query (${e.duration}ms): ${e.query}`);
         }
     });
 }
 
-// @ts-expect-error – Prisma event typing
-prisma.$on('error', (e: { message: string }) => {
+(prisma.$on as any)('error', (e: any) => {
     logger.error(`Prisma error: ${e.message}`);
 });
 

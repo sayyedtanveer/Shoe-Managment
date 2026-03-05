@@ -13,7 +13,7 @@ export interface OcrParsedItem {
 
 export class OcrService {
     async enqueueOcr(filePath: string) {
-        const job = await ocrQueue.add('ocr-upload', { filePath }, {
+        const job = await ocrQueue.add('ocr-upload' as any, { filePath }, {
             removeOnComplete: 50,
             removeOnFail: 50,
         });

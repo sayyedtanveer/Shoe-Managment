@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { sendSuccess } from './ApiResponse';
 
 /**
  * BaseController – wraps async route handlers so errors are passed to next().
@@ -18,5 +19,17 @@ export abstract class BaseController {
         return (req: Request, res: Response, next: NextFunction): void => {
             Promise.resolve(fn(req, res, next)).catch(next);
         };
+    }
+
+    /**
+     * Send a successful response.
+     */
+    protected ok<T>(
+        res: Response,
+        data: T,
+        message = 'Success',
+        statusCode = 200
+    ): Response {
+        return sendSuccess(res, data, message, statusCode);
     }
 }

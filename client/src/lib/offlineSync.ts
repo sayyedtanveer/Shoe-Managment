@@ -7,7 +7,7 @@ function keyFor(order: PendingOrder) {
 
 async function syncOnce() {
     if (!navigator.onLine) return;
-    const unsynced = await salesDb.pendingOrders.where('synced').equals(false).toArray();
+    const unsynced = await salesDb.pendingOrders.filter(p => p.synced === false).toArray();
     if (!unsynced.length) return;
     for (const op of unsynced) {
         try {
@@ -22,16 +22,15 @@ async function syncOnce() {
 }
 
 let started = false;
-let intervalId: number | null = null;
 
 export function startOfflineSync() {
     if (started) return;
     started = true;
     window.addEventListener('online', () => { void syncOnce(); });
     void syncOnce();
-    intervalId = window.setInterval(() => { void syncOnce(); }, 30000);
+    void window.setInterval(() => { void syncOnce(); }, 30000);
 }
 
 export async function getUnsyncedCount(): Promise<number> {
-    return salesDb.pendingOrders.where('synced').equals(false).count();
+    return salesDb.pendingOrders.filter(p => p.synced === false).count();
 }

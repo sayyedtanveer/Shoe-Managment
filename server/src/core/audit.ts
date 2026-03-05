@@ -7,8 +7,8 @@ interface AuditParams {
     action: string;
     entityType: string;
     entityId?: string;
-    oldData?: Prisma.JsonValue;
-    newData?: Prisma.JsonValue;
+    oldData?: unknown;
+    newData?: unknown;
     ipAddress?: string;
 }
 
@@ -30,8 +30,8 @@ export async function recordAudit({
                 action,
                 entityType,
                 entityId,
-                oldData,
-                newData,
+                oldData: (oldData ? JSON.parse(JSON.stringify(oldData)) : null) as any,
+                newData: (newData ? JSON.parse(JSON.stringify(newData)) : null) as any,
                 ipAddress,
             },
         });

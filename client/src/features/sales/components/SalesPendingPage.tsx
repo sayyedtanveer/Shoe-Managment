@@ -25,7 +25,7 @@ export function SalesPendingPage() {
     useEffect(() => {
         let mounted = true;
         async function load() {
-            const rows = await salesDb.pendingOrders.where('synced').equals(false).toArray();
+            const rows = await salesDb.pendingOrders.filter(p => p.synced === false).toArray();
             if (mounted) setUnsynced(rows);
         }
         void load();

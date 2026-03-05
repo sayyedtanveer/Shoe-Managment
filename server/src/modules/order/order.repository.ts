@@ -269,7 +269,7 @@ export class OrderRepository {
 
             const effectiveDiscount = discount ?? order.discount;
             const total =
-                (order.subtotal ?? 0) - (effectiveDiscount ?? 0) + (order.tax ?? 0);
+                (Number(order.subtotal ?? 0) - Number(effectiveDiscount ?? 0) + Number(order.tax ?? 0));
 
             const updated = await tx.order.update({
                 where: { id: orderId },
@@ -338,7 +338,7 @@ export class OrderRepository {
             data: {
                 status: 'cancelled',
                 paymentDetails: {
-                    ...(order.paymentDetails as Prisma.InputJsonValue),
+                    ...JSON.parse(JSON.stringify(order.paymentDetails)),
                     voidReason: reason,
                 } as Prisma.InputJsonValue,
             },

@@ -32,7 +32,7 @@ export function SalesScanPage() {
 
         return () => {
             html5QrCode.stop().catch(() => {});
-            html5QrCode.clear().catch(() => {});
+            html5QrCode.clear();
         };
     }, [navigate]);
 

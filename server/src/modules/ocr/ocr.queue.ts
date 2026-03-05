@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 
 const connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
-});
+}) as any;
 
 const OCR_QUEUE_NAME = 'ocr-processing';
 

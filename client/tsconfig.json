@@ -16,6 +16,7 @@
         "noEmit": true,
         "jsx": "react-jsx",
         "strict": true,
+        "types": ["vite-plugin-pwa/client"],
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
@@ -27,6 +28,7 @@
         }
     },
     "include": [
-        "src"
+        "src",
+        "vite-env.d.ts"
     ]
 }

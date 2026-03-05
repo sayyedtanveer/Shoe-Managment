@@ -52,14 +52,14 @@ export function OcrStockEntryPage() {
                         .filter(Boolean)
                 );
 
-                const detectedHeaders = splitRows.reduce((max, row) => (row.length > max.length ? row : max), [] as string[]);
+                const detectedHeaders = splitRows.reduce((max: string[], row: string[]) => (row.length > max.length ? row : max), [] as string[]);
                 setHeaders(detectedHeaders);
-                setMapping(Object.fromEntries(detectedHeaders.map((header, index) => [String(index), index === 0 ? 'name' : index === 1 ? 'quantity' : index === 2 ? 'price' : 'ignore'])));
+                setMapping(Object.fromEntries(detectedHeaders.map((_: string, index: number) => [String(index), index === 0 ? 'name' : index === 1 ? 'quantity' : index === 2 ? 'price' : 'ignore'])));
 
                 const parsedRows = splitRows
-                    .map((cols) => {
+                    .map((cols: string[]) => {
                         const row: EditableRow = { name: '', quantity: 0, price: 0 };
-                        cols.forEach((value, colIndex) => {
+                        cols.forEach((value: string, colIndex: number) => {
                             const field = mapping[String(colIndex)] ?? (colIndex === 0 ? 'name' : colIndex === 1 ? 'quantity' : colIndex === 2 ? 'price' : 'ignore');
                             if (field === 'name') row.name = value;
                             if (field === 'quantity') row.quantity = Number(value.replace(/[^\d.-]/g, '')) || 0;
@@ -67,7 +67,7 @@ export function OcrStockEntryPage() {
                         });
                         return row;
                     })
-                    .filter((row) => row.name);
+                    .filter((row: EditableRow) => row.name);
 
                 setRows(parsedRows);
                 setLoading(false);

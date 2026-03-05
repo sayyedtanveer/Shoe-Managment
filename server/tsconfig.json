@@ -28,6 +28,9 @@
             ],
             "@middlewares/*": [
                 "src/middlewares/*"
+            ],
+            "@realtime/*": [
+                "src/realtime/*"
             ]
         }
     },
