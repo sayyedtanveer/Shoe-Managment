@@ -31,6 +31,10 @@ const voidOrderSchema = z.object({
     reason: z.string().min(1),
 });
 
+const assignCustomerSchema = z.object({
+    customerId: z.string().uuid(),
+});
+
 export class OrderController extends BaseController {
     private svc = new OrderService();
 
@@ -103,6 +107,17 @@ export class OrderController extends BaseController {
             parsed.data.discount
         );
         sendSuccess(res, order, 'Order completed');
+    });
+
+
+    assignCustomer = this.asyncHandler(async (req: Request, res: Response) => {
+        const parsed = assignCustomerSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw new BadRequestError('Validation failed', parsed.error.errors);
+        }
+
+        const order = await this.svc.assignCustomer(this.shopId(req), req.params.id, parsed.data.customerId);
+        sendSuccess(res, order, 'Customer assigned to order');
     });
 
     voidOrder = this.asyncHandler(async (req: Request, res: Response) => {

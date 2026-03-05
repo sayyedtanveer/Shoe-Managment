@@ -13,7 +13,7 @@ export class CustomerController extends BaseController {
     }
 
     list = this.asyncHandler(async (req: Request, res: Response) => {
-        sendSuccess(res, await this.svc.list(this.shopId(req)), 'Customers');
+        sendSuccess(res, await this.svc.list(this.shopId(req), req.query.search as string | undefined), 'Customers');
     });
 
     getById = this.asyncHandler(async (req: Request, res: Response) => {
@@ -21,7 +21,7 @@ export class CustomerController extends BaseController {
     });
 
     lookup = this.asyncHandler(async (req: Request, res: Response) => {
-        const c = await this.svc.lookupByPhone(req.query.phone as string, this.shopId(req));
+        const c = await this.svc.lookupByPhone(String(req.query.phone ?? ''), this.shopId(req));
         sendSuccess(res, c, c ? 'Customer found' : 'Customer not found');
     });
 
@@ -36,5 +36,14 @@ export class CustomerController extends BaseController {
     addLoyalty = this.asyncHandler(async (req: Request, res: Response) => {
         const { points } = req.body;
         sendSuccess(res, await this.svc.addLoyaltyPoints(req.params.id, Number(points)), 'Loyalty points added');
+    });
+
+    redeemLoyalty = this.asyncHandler(async (req: Request, res: Response) => {
+        const { points } = req.body;
+        sendSuccess(
+            res,
+            await this.svc.redeemLoyaltyPoints(req.params.id, this.shopId(req), Number(points)),
+            'Loyalty points redeemed'
+        );
     });
 }

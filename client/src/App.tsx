@@ -14,6 +14,8 @@ import { LocationsPage } from '@/features/inventory/components/LocationsPage';
 import { ProductDetailPage } from '@/features/inventory/components/ProductDetailPage';
 import { OcrStockEntryPage } from '@/features/inventory/components/OcrStockEntryPage';
 import { CustomersPage } from '@/features/customers/components/CustomersPage';
+import { CustomerDetailPage } from '@/features/customers/components/CustomerDetailPage';
+import { ReportsPage } from '@/features/reports/components/ReportsPage';
 import { OrdersPage } from '@/features/orders/components/OrdersPage';
 import { CounterOrdersPage } from '@/features/counter/components/CounterOrdersPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
@@ -49,7 +51,9 @@ export default function App() {
                 <Route path="inventory/products/:id" element={<ProductDetailPage />} />
                 <Route path="inventory/ocr-entry" element={<OcrStockEntryPage />} />
                 <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomerDetailPage />} />
                 <Route path="orders" element={<OrdersPage />} />
+                <Route path="reports" element={<ReportsPage />} />
                 <Route path="users" element={<UsersPage />} />
             </Route>
 

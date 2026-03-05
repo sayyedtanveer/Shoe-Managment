@@ -152,7 +152,10 @@ export class OrderRepository {
             if (dto.customerId) {
                 await tx.customer.update({
                     where: { id: dto.customerId },
-                    data: { totalPurchases: { increment: total } },
+                    data: {
+                        totalPurchases: { increment: total },
+                        loyaltyPoints: { increment: Math.floor(total / 100) },
+                    },
                 });
             }
 
@@ -290,7 +293,10 @@ export class OrderRepository {
             if (updated.customerId) {
                 await tx.customer.update({
                     where: { id: updated.customerId },
-                    data: { totalPurchases: { increment: total } },
+                    data: {
+                        totalPurchases: { increment: total },
+                        loyaltyPoints: { increment: Math.floor(total / 100) },
+                    },
                 });
             }
 
@@ -298,6 +304,25 @@ export class OrderRepository {
         });
     }
 
+
+
+    async assignCustomer(shopId: string, orderId: string, customerId: string): Promise<Order> {
+        const order = await prisma.order.findFirst({ where: { id: orderId, shopId } });
+        if (!order) throw new NotFoundError('Order not found');
+
+        const customer = await prisma.customer.findFirst({ where: { id: customerId, shopId } });
+        if (!customer) throw new NotFoundError('Customer not found');
+
+        return prisma.order.update({
+            where: { id: orderId },
+            data: { customerId },
+            include: {
+                orderItems: { include: { variant: { include: { product: true } } } },
+                customer: true,
+                salesman: { select: { id: true, fullName: true, username: true } },
+            },
+        });
+    }
     async voidOrder(
         shopId: string,
         orderId: string,

@@ -20,6 +20,7 @@ import offlineRouter from '@modules/offline/offline.router';
 import qrRouter from '@modules/qr/qr.router';
 import scanRouter from '@modules/scan/scan.router';
 import ocrRouter from '@modules/ocr/ocr.router';
+import reportRouter from '@modules/report/report.router';
 
 const app: Application = express();
 
@@ -81,6 +82,8 @@ app.use('/api/v1/customers', customerRouter);
 app.use('/api/v1/offline', offlineRouter);
 app.use('/api/v1/qr', qrRouter);
 app.use('/api/v1/scan', scanRouter);
+app.use('/api/v1/reports', reportRouter);
+app.use('/api/reports', tenantContext, reportRouter);
 app.use('/api/ocr', ocrRouter);
 
 // ── 404 & Error handlers ─────────────────────────────────────
