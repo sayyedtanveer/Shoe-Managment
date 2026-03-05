@@ -27,7 +27,7 @@ export function PinLoginPage() {
 
             if (user.role === 'admin') navigate('/admin');
             else if (user.role === 'inventory_manager') navigate('/admin/inventory');
-            else if (user.role === 'salesman') navigate('/salesman');
+            else if (user.role === 'salesman') navigate('/sales');
             else if (user.role === 'cashier') navigate('/counter');
             else navigate('/dashboard');
         } catch (err: any) {

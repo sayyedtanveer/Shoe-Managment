@@ -18,6 +18,7 @@ import orderRouter from '@modules/order/order.router';
 import customerRouter from '@modules/customer/customer.router';
 import offlineRouter from '@modules/offline/offline.router';
 import qrRouter from '@modules/qr/qr.router';
+import scanRouter from '@modules/scan/scan.router';
 
 const app: Application = express();
 
@@ -78,6 +79,7 @@ app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/customers', customerRouter);
 app.use('/api/v1/offline', offlineRouter);
 app.use('/api/v1/qr', qrRouter);
+app.use('/api/v1/scan', scanRouter);
 
 // ── 404 & Error handlers ─────────────────────────────────────
 app.use(notFound);

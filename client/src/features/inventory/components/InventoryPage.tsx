@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/apiClient';
 import { useInventoryFilterStore } from '@/stores/inventoryFilterStore';
 
@@ -40,6 +41,7 @@ async function fetchProducts(params: {
 
 export function InventoryPage() {
     const filters = useInventoryFilterStore();
+    const navigate = useNavigate();
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['inventory', 'products', filters],
@@ -105,7 +107,11 @@ export function InventoryPage() {
                     {products.map((p) => {
                         const totalStock = p.variants.reduce((sum, v) => sum + v.quantity, 0);
                         return (
-                            <tr key={p.id} className="border-t border-neutral-800 hover:bg-neutral-900/70">
+                            <tr
+                                key={p.id}
+                                className="border-t border-neutral-800 hover:bg-neutral-900/70 cursor-pointer"
+                                onClick={() => navigate(`/admin/inventory/products/${p.id}`)}
+                            >
                                 <td className="px-4 py-3">
                                     <div className="font-medium text-white">{p.model}</div>
                                     {!p.isActive && (
