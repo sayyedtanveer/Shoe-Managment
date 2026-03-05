@@ -92,6 +92,19 @@ export class OrderService {
         return completed;
     }
 
+
+    async assignCustomer(shopId: string, orderId: string, customerId: string): Promise<Order> {
+        const updated = await this.repo.assignCustomer(shopId, orderId, customerId);
+        await recordAudit({
+            shopId,
+            action: 'order.assignCustomer',
+            entityType: 'order',
+            entityId: orderId,
+            newData: updated,
+        });
+        return updated;
+    }
+
     async voidOrder(
         shopId: string,
         orderId: string,

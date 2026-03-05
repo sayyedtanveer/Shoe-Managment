@@ -62,6 +62,9 @@ export function CounterOrdersPage() {
     const [discount, setDiscount] = useState<number | ''>('');
     const [formMessage, setFormMessage] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
+    const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
 
     const { data: orders = [], isLoading, isError } = useQuery({
         queryKey: ['counter', 'queue'],
@@ -148,6 +151,36 @@ export function CounterOrdersPage() {
         onError: (error: any) => {
             setFormMessage(null);
             setFormError(error?.response?.data?.message ?? 'Failed to complete order.');
+        },
+    });
+
+
+
+    const assignCustomerMutation = useMutation({
+        mutationFn: async (customerId: string) => {
+            if (!selectedOrder) throw new Error('No order selected');
+            await apiClient.patch(`/orders/${selectedOrder.id}/customer`, { customerId });
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['counter', 'queue'] });
+            setShowCustomerModal(false);
+            setCustomerName('');
+            setCustomerPhone('');
+        },
+    });
+
+    const createAndAssignMutation = useMutation({
+        mutationFn: async () => {
+            if (!selectedOrder) throw new Error('No order selected');
+            const created = await apiClient.post('/customers', { name: customerName || undefined, phone: customerPhone || undefined });
+            const customerId = created.data?.data?.id;
+            await apiClient.patch(`/orders/${selectedOrder.id}/customer`, { customerId });
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['counter', 'queue'] });
+            setShowCustomerModal(false);
+            setCustomerName('');
+            setCustomerPhone('');
         },
     });
 
@@ -274,6 +307,9 @@ export function CounterOrdersPage() {
                                 Placed at:{' '}
                                 {new Date(selectedOrder.createdAt).toLocaleTimeString()}
                             </div>
+                            <button type="button" onClick={() => setShowCustomerModal(true)} className="mt-2 px-2 py-1 rounded bg-primary-600 text-white">
+                                {selectedOrder.customer ? 'Change Customer' : 'Add Customer'}
+                            </button>
                         </div>
                     )}
                 </div>
@@ -454,6 +490,26 @@ export function CounterOrdersPage() {
                     </div>
                 )}
             </section>
+
+            {showCustomerModal && selectedOrder && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-lg border border-surface-border bg-surface-card p-4 space-y-3">
+                        <h3 className="font-semibold">Add customer to checkout</h3>
+                        <input placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full rounded-md bg-surface border border-surface-border px-2.5 py-1.5 text-xs" />
+                        <input placeholder="Phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full rounded-md bg-surface border border-surface-border px-2.5 py-1.5 text-xs" />
+                        <div className="flex gap-2 justify-end">
+                            <button type="button" className="px-3 py-1 rounded border border-surface-border" onClick={() => setShowCustomerModal(false)}>Close</button>
+                            <button type="button" className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={async () => {
+                                if (!customerPhone) return;
+                                const lookup = await apiClient.get('/customers/search', { params: { phone: customerPhone } });
+                                const found = lookup.data?.data;
+                                if (found?.id) assignCustomerMutation.mutate(found.id);
+                                else createAndAssignMutation.mutate();
+                            }}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

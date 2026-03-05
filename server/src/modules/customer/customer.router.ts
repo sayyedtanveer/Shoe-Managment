@@ -8,10 +8,12 @@ const ctrl = new CustomerController();
 router.use(authenticate);
 
 router.get('/', ctrl.list);
-router.get('/lookup', ctrl.lookup);         // ?phone=91234...
+router.get('/lookup', ctrl.lookup);         // backward compatibility
+router.get('/search', ctrl.lookup);         // ?phone=91234...
 router.get('/:id', ctrl.getById);
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);
 router.patch('/:id/loyalty', ctrl.addLoyalty);
+router.post('/:id/redeem', ctrl.redeemLoyalty);
 
 export default router;

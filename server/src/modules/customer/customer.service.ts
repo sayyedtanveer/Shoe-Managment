@@ -1,6 +1,6 @@
 import { Customer, Prisma } from '@prisma/client';
 import { CustomerRepository } from './customer.repository';
-import { NotFoundError } from '@core/ApiError';
+import { BadRequestError, NotFoundError } from '@core/ApiError';
 import { recordAudit } from '@core/audit';
 
 export interface CreateCustomerDto {
@@ -17,7 +17,7 @@ export class CustomerService {
     private readonly repo: CustomerRepository;
     constructor() { this.repo = new CustomerRepository(); }
 
-    list(shopId: string) { return this.repo.findAll(shopId); }
+    list(shopId: string, search?: string) { return this.repo.findAll(shopId, search); }
 
     async getById(id: string, shopId: string): Promise<Customer> {
         const c = await this.repo.findById(id, shopId);
@@ -62,4 +62,12 @@ export class CustomerService {
     addLoyaltyPoints(id: string, points: number) {
         return this.repo.addLoyaltyPoints(id, points);
     }
+
+    async redeemLoyaltyPoints(id: string, shopId: string, points: number): Promise<Customer> {
+        if (!Number.isFinite(points) || points <= 0) {
+            throw new BadRequestError('Points should be greater than 0');
+        }
+        return this.repo.redeemLoyaltyPoints(id, shopId, Math.floor(points));
+    }
 }
+
