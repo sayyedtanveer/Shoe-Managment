@@ -12,6 +12,7 @@ import { BrandsPage } from '@/features/inventory/components/BrandsPage';
 import { CategoriesPage } from '@/features/inventory/components/CategoriesPage';
 import { LocationsPage } from '@/features/inventory/components/LocationsPage';
 import { ProductDetailPage } from '@/features/inventory/components/ProductDetailPage';
+import { OcrStockEntryPage } from '@/features/inventory/components/OcrStockEntryPage';
 import { CustomersPage } from '@/features/customers/components/CustomersPage';
 import { OrdersPage } from '@/features/orders/components/OrdersPage';
 import { CounterOrdersPage } from '@/features/counter/components/CounterOrdersPage';
@@ -35,7 +36,7 @@ export default function App() {
             <Route
                 path="/admin"
                 element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute allowedRoles={['admin', 'inventory_manager']}>
                         <AdminLayout />
                     </ProtectedRoute>
                 }
@@ -46,6 +47,7 @@ export default function App() {
                 <Route path="inventory/categories" element={<CategoriesPage />} />
                 <Route path="inventory/locations" element={<LocationsPage />} />
                 <Route path="inventory/products/:id" element={<ProductDetailPage />} />
+                <Route path="inventory/ocr-entry" element={<OcrStockEntryPage />} />
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="users" element={<UsersPage />} />
