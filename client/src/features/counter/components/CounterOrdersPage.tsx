@@ -88,6 +88,10 @@ export function CounterOrdersPage() {
 
         socket.on('connect', () => {
             socket?.emit('join_counter');
+            qc.invalidateQueries({ queryKey: ['counter', 'queue'] });
+        });
+        socket.io.on('reconnect', () => {
+            qc.invalidateQueries({ queryKey: ['counter', 'queue'] });
         });
 
         socket.on('new_order', (order: CounterOrder) => {

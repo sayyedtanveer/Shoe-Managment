@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { sendSuccess } from '@core/ApiResponse';
 import { OrderService } from './order.service';
 import { BadRequestError } from '@core/ApiError';
+import { getRedis } from '@infrastructure/cache/redis';
 
 const createOrderSchema = z.object({
     customerId: z.string().uuid().optional(),
@@ -57,12 +58,28 @@ export class OrderController extends BaseController {
             throw new BadRequestError('Validation failed', parsed.error.errors);
         }
         const salesmanId = req.user?.id;
+        const idempotencyKeyHeader = req.headers['idempotency-key'] as string | undefined;
+        if (idempotencyKeyHeader) {
+            const redis = getRedis();
+            const key = `idemp:order:${this.shopId(req)}:${idempotencyKeyHeader}`;
+            const existingOrderId = await redis.get(key);
+            if (existingOrderId) {
+                const existingOrder = await this.svc.getById(existingOrderId, this.shopId(req));
+                sendSuccess(res, existingOrder, 'Order created', 201);
+                return;
+            }
+        }
         const order = await this.svc.createPending({
             shopId: this.shopId(req),
             salesmanId,
             customerId: parsed.data.customerId,
             items: parsed.data.items,
         });
+        if (idempotencyKeyHeader) {
+            const redis = getRedis();
+            const key = `idemp:order:${this.shopId(req)}:${idempotencyKeyHeader}`;
+            await redis.setEx(key, 24 * 60 * 60, order.id);
+        }
         sendSuccess(res, order, 'Order created', 201);
     });
 

@@ -14,8 +14,12 @@ async function bootstrap(): Promise<void> {
         await prisma.$connect();
         logger.info('PostgreSQL connected');
 
-        await connectRedis();
-        startOcrWorker();
+        try {
+            await connectRedis();
+            startOcrWorker();
+        } catch (err) {
+            logger.warn('Redis connection failed. Continuing without OCR/queue features for now.');
+        }
 
         const httpServer = createServer(app);
 

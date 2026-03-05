@@ -22,6 +22,7 @@ async function fetchScan(code: string): Promise<VariantScanResult> {
 export function SalesProductPage() {
     const { variantId } = useParams<{ variantId: string }>();
     const [quantity, setQuantity] = useState(1);
+    const [offline, setOffline] = useState<VariantScanResult | null>(null);
     const navigate = useNavigate();
     const addItem = useSalesCartStore((s) => s.addItem);
 
@@ -43,14 +44,39 @@ export function SalesProductPage() {
                 image: data.image,
                 updatedAt: Date.now(),
             });
+            setOffline(null);
         }
     }, [data]);
 
+    useEffect(() => {
+        let mounted = true;
+        async function loadOffline() {
+            if (!variantId) return;
+            const cached = await salesDb.productsCache.get(variantId);
+            if (mounted && cached) {
+                setOffline({
+                    id: cached.variantId,
+                    productName: cached.productName,
+                    size: cached.size ?? null,
+                    color: cached.color ?? null,
+                    sellingPrice: String(cached.price),
+                    image: cached.image ?? null,
+                });
+            }
+        }
+        if (isError) {
+            void loadOffline();
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isError, variantId]);
+
     if (!variantId) return <p className="text-red-400 p-4">Missing variant code.</p>;
 
-    if (isLoading) return <p className="text-neutral-300 p-4">Loading product…</p>;
+    if (isLoading && !offline) return <p className="text-neutral-300 p-4">Loading product…</p>;
 
-    if (isError || !data) {
+    if ((isError || !data) && !offline) {
         return (
             <div className="p-4 space-y-3">
                 <p className="text-red-400">Could not load product for this QR code.</p>
@@ -64,15 +90,16 @@ export function SalesProductPage() {
         );
     }
 
-    const price = Number(data.sellingPrice ?? 0);
+    const effective = data ?? offline!;
+    const price = Number(effective.sellingPrice ?? 0);
 
     const handleAddToCart = () => {
         addItem(
             {
-                variantId: data.id,
-                productName: data.productName,
-                size: data.size,
-                color: data.color,
+                variantId: effective.id,
+                productName: effective.productName,
+                size: effective.size,
+                color: effective.color,
                 price,
             },
             quantity
@@ -83,18 +110,21 @@ export function SalesProductPage() {
     return (
         <div className="flex flex-col h-full">
             <div className="p-4 space-y-3">
-                {data.image && (
+                {effective.image && (
                     <div className="w-32 h-32 rounded-xl overflow-hidden bg-neutral-900 mb-2">
-                        <img src={data.image} alt={data.productName} className="w-full h-full object-cover" />
+                        <img src={effective.image} alt={effective.productName} className="w-full h-full object-cover" />
                     </div>
                 )}
-                <h1 className="text-xl font-semibold">{data.productName}</h1>
+                <h1 className="text-xl font-semibold">{effective.productName}</h1>
                 <p className="text-sm text-gray-400">
-                    Size: {data.size ?? '—'} · Color: {data.color ?? '—'}
+                    Size: {effective.size ?? '—'} · Color: {effective.color ?? '—'}
                 </p>
                 <p className="text-lg font-bold text-teal-400">
                     ₹{price.toFixed(2)}
                 </p>
+                {offline && (
+                    <p className="text-xs text-amber-400">Offline data</p>
+                )}
             </div>
             <div className="mt-auto p-4 space-y-3">
                 <div className="flex items-center gap-3">
