@@ -2,13 +2,14 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import {
     LayoutDashboard, Package, ShoppingCart, Users,
-    BarChart3, Settings, LogOut, Menu, X, Footprints
+    BarChart3, Settings, LogOut, Menu, X, Footprints, ScanText
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/inventory', icon: Package, label: 'Inventory' },
+    { to: '/admin/inventory/ocr-entry', icon: ScanText, label: 'OCR Entry' },
     { to: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
     { to: '/admin/customers', icon: Users, label: 'Customers' },
     { to: '/admin/reports', icon: BarChart3, label: 'Reports' },

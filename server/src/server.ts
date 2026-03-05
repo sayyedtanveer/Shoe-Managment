@@ -5,6 +5,7 @@ import logger from '@core/logger';
 import prisma from '@infrastructure/database/prisma';
 import { connectRedis } from '@infrastructure/cache/redis';
 import { initSocket } from './realtime/socket';
+import { startOcrWorker } from '@modules/ocr/ocr.queue';
 
 const PORT = Number(process.env.PORT ?? 5000);
 
@@ -14,6 +15,7 @@ async function bootstrap(): Promise<void> {
         logger.info('PostgreSQL connected');
 
         await connectRedis();
+        startOcrWorker();
 
         const httpServer = createServer(app);
 
